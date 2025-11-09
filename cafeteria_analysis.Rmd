@@ -1,0 +1,390 @@
+---
+title: "Final Research"
+output: html_document
+date: "2025-09-25"
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(car)
+library(psych)
+library(forcats)
+library(lmtest)
+library(relaimpo)
+library(corrplot)
+```
+
+Cafeteria Services dataset
+```{r}
+csd <- read.csv(
+  "~/Z/ADDS/Final Research/Resubmit/Student_Satisfaction.csv",
+  header = TRUE,
+  col.names = c(
+    "Gender", "AgeGroup", "Program", "Year", "CafeteriaUsage",
+    "REL_CheerfulStaff", "REL_EntertainStudents", "REL_SincereInterest",
+    "REL_AccurateService", "REL_QuickResponse", "REL_DependentService",
+    "RESP_WillingServe", "RESP_QuickResponse", "RESP_RespondNeeds",
+    "RESP_PromptService", "RESP_QualityService",
+    "ASS_Courtesy", "ASS_PositiveBehavior", "ASS_TrustConfidence",
+    "TANG_GoodStaff", "TANG_ComfortFacilities", "TANG_CleanAppearance",
+    "TANG_FunctionalEquip", "TANG_NeatStaff",
+    "EMP_Kindness", "EMP_Approachable", "EMP_CheerfulAsk", "EMP_CareConcern",
+    "SAT_AccessibleLocation", "SAT_AffordableFood", "SAT_Cleanliness",
+    "SAT_NutritionDisplay", "SAT_SanitizedUtensils", "SAT_OrganizedMgmt",
+    "SAT_PromptService", "SAT_GoodEmpathy", "SAT_HygienicStaff"
+  )
+)
+
+```
+
+```{r}
+view(csd)
+```
+
+```{r}
+csd <- csd%>% mutate_if(is.character, as.factor)
+csd$Year <- as.factor(csd$Year)
+str(csd)
+```
+
+
+Objective 01
+```{r}
+likert_cols <- c(
+  # Reliability
+  "REL_CheerfulStaff", "REL_EntertainStudents", "REL_SincereInterest",
+  "REL_AccurateService", "REL_QuickResponse", "REL_DependentService",
+  
+  # Responsiveness
+  "RESP_WillingServe", "RESP_QuickResponse", "RESP_RespondNeeds",
+  "RESP_PromptService", "RESP_QualityService",
+  
+  # Assurance
+  "ASS_Courtesy", "ASS_PositiveBehavior", "ASS_TrustConfidence",
+  
+  # Tangibility
+  "TANG_GoodStaff", "TANG_ComfortFacilities", "TANG_CleanAppearance",
+  "TANG_FunctionalEquip", "TANG_NeatStaff",
+  
+  # Empathy
+  "EMP_Kindness", "EMP_Approachable", "EMP_CheerfulAsk", "EMP_CareConcern",
+  
+  # Student Satisfaction
+  "SAT_AccessibleLocation", "SAT_AffordableFood", "SAT_Cleanliness",
+  "SAT_NutritionDisplay", "SAT_SanitizedUtensils", "SAT_OrganizedMgmt",
+  "SAT_PromptService", "SAT_GoodEmpathy", "SAT_HygienicStaff")
+```
+
+```{r}
+csd <- csd %>% 
+  mutate(across(all_of(likert_cols), ~as.numeric(factor(.x,
+       levels = c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"),
+       labels = c(1,2,3,4,5)))))
+```
+
+```{r}
+view(csd)
+head(csd)
+```
+
+
+```{r}
+summary(csd)
+```
+
+
+```{r}
+sum(is.na(csd))
+```
+
+
+
+Reliability test
+```{r}
+# Reliability
+alpha(csd[,c( "REL_CheerfulStaff", "REL_EntertainStudents", "REL_SincereInterest",
+  "REL_AccurateService", "REL_QuickResponse", "REL_DependentService")])
+```
+
+
+```{r}
+# Responsiveness
+alpha(csd[, c("RESP_WillingServe", "RESP_QuickResponse", "RESP_RespondNeeds",
+  "RESP_PromptService", "RESP_QualityService")])
+```
+
+```{r}
+# Assurance
+alpha(csd[, c("ASS_Courtesy", "ASS_PositiveBehavior", "ASS_TrustConfidence")])
+```
+
+```{r}
+# Tangibility
+alpha(csd[, c("TANG_GoodStaff", "TANG_ComfortFacilities", "TANG_CleanAppearance",
+  "TANG_FunctionalEquip", "TANG_NeatStaff")])
+```
+
+```{r}
+# Empathy
+alpha(csd[, c("EMP_Kindness", "EMP_Approachable", "EMP_CheerfulAsk", "EMP_CareConcern")])
+```
+
+
+```{r}
+# Student Satisfaction (dependent variable)
+alpha(csd[, c("SAT_AccessibleLocation", "SAT_AffordableFood", "SAT_Cleanliness",
+  "SAT_NutritionDisplay", "SAT_SanitizedUtensils", "SAT_OrganizedMgmt",
+  "SAT_PromptService", "SAT_GoodEmpathy", "SAT_HygienicStaff")])
+```
+
+```{r}
+csd$Reliability <- rowMeans(csd[,c("REL_CheerfulStaff", "REL_EntertainStudents", "REL_SincereInterest",
+  "REL_AccurateService", "REL_QuickResponse", "REL_DependentService")], na.rm=TRUE)
+
+csd$Responsiveness <- rowMeans(csd[,c("RESP_WillingServe", "RESP_QuickResponse", "RESP_RespondNeeds",
+  "RESP_PromptService", "RESP_QualityService")], na.rm=TRUE)
+
+csd$Assurance <- rowMeans(csd[,c("ASS_Courtesy", "ASS_PositiveBehavior", "ASS_TrustConfidence")], na.rm=TRUE)
+
+csd$Tangibility <- rowMeans(csd[,c("TANG_GoodStaff", "TANG_ComfortFacilities", "TANG_CleanAppearance",
+  "TANG_FunctionalEquip", "TANG_NeatStaff")], na.rm=TRUE)
+
+csd$Empathy <- rowMeans(csd[,c("EMP_Kindness", "EMP_Approachable", "EMP_CheerfulAsk", "EMP_CareConcern")], na.rm=TRUE)
+
+csd$Student_Satisfaction <- rowMeans(csd[,c("SAT_AccessibleLocation", "SAT_AffordableFood", "SAT_Cleanliness",
+  "SAT_NutritionDisplay", "SAT_SanitizedUtensils", "SAT_OrganizedMgmt",
+  "SAT_PromptService", "SAT_GoodEmpathy", "SAT_HygienicStaff")], na.rm=TRUE)
+```
+
+
+```{r}
+# Histogram for Student_Satisfaction
+ggplot(csd, aes(x = Student_Satisfaction)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "white", alpha = 0.8) +
+  labs(title = "Student Satisfaction Distribution",
+       x = "Student_Satisfaction Score",
+       y = "Frequency") +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold"))
+
+```
+
+```{r}
+# Base R colorful boxplot
+boxplot(csd$Reliability, csd$Responsiveness, csd$Assurance, csd$Tangibility, csd$Empathy
+,
+        names = c("Reliability","Responsiveness","Assurance","Tangibility","Empathy"),
+        main = "Satisfaction Factors",
+        col = rainbow(5), border = "black")
+```
+
+```{r}
+# List of SERVQUAL variables
+servqual_vars <- c("Reliability","Responsiveness","Assurance","Tangibility","Empathy")
+
+# Loop through each variable and print outliers
+for (var in servqual_vars) {
+  cat("Outliers for", var, ":\n")
+  outliers <- boxplot.stats(csd[[var]])$out
+  print(outliers)
+  cat("\n")
+}
+
+```
+
+
+
+
+Group comparison
+```{r}
+# Compare Student_Satisfaction between male/female
+t.test(Student_Satisfaction ~ Gender, data=csd)
+```
+Group comparison
+```{r}
+# Compare Student_Satisfaction by Year
+aov_year <- aov(Student_Satisfaction ~ Year, data=csd)
+summary(aov_year)
+```
+
+Objective 1
+Check simple relationships (correlations)
+```{r}
+cor(csd$Reliability, csd$Student_Satisfaction, use="complete.obs")
+cor(csd$Responsiveness, csd$Student_Satisfaction, use="complete.obs")
+cor(csd$Assurance, csd$Student_Satisfaction, use="complete.obs")
+cor(csd$Tangibility, csd$Student_Satisfaction, use="complete.obs")
+cor(csd$Empathy, csd$Student_Satisfaction, use="complete.obs")
+```
+
+
+Multiple Regression (main test)
+```{r}
+# Fit regression model
+model1 <- lm(Student_Satisfaction ~ Reliability + Responsiveness + Assurance + Tangibility + Empathy, data=csd)
+
+# Show results
+summary(model1)
+
+```
+```{r}
+shapiro.test(residuals(model1))
+```
+```{r}
+qqnorm(residuals(model1))
+qqline(residuals(model1), col="red")
+```
+```{r}
+#Homoscedasticity test (equal variance of residuals)
+plot(model1$fitted.values, residuals(model1),
+     main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h=0, col="red")
+```
+```{r}
+#Multicollinearity check
+vif(model1)
+```
+
+
+
+Objective 2
+Regression without demographics
+Multiple Regression
+```{r}
+# Run regression with five factors
+model2 <- lm(Student_Satisfaction ~ Reliability + Responsiveness + Assurance + Tangibility + Empathy, data=csd)
+
+summary(model2)
+```
+```{r}
+shapiro.test(residuals(model2))
+```
+
+```{r}
+qqnorm(residuals(model2))
+qqline(residuals(model2), col="red")
+```
+```{r}
+#Homoscedasticity test (equal variance of residuals)
+plot(model2$fitted.values, residuals(model2),
+     main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h=0, col="red")
+```
+```{r}
+#Multicollinearity check
+vif(model2)
+```
+
+
+Compare Strength of Predictors (Standardized Betas)
+```{r}
+# Standardize predictors and outcome
+model2_std <- lm(scale(Student_Satisfaction) ~ scale(Reliability) + scale(Responsiveness) +
+                    scale(Assurance) + scale(Tangibility) + scale(Empathy), data=csd)
+
+summary(model2_std)
+```
+
+
+
+Regression with demographics (control variables)
+```{r}
+# Add demographics as controls
+model2b <- lm(Student_Satisfaction ~ Reliability + Responsiveness + Assurance + Tangibility + Empathy +
+                Gender + Year + Program + CafeteriaUsage, data=csd)
+summary(model2b)
+```
+```{r}
+shapiro.test(residuals(model2b))
+```
+```{r}
+qqnorm(residuals(model2b))
+qqline(residuals(model2b), col="red")
+```
+
+```{r}
+#Homoscedasticity test (equal variance of residuals)
+plot(model2b$fitted.values, residuals(model2b),
+     main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h=0, col="red")
+```
+
+```{r}
+#Multicollinearity check
+vif(model2b)
+```
+
+
+
+```{r}
+# Standardized betas (factors will be standardized, categorical variables stay as factors)
+model2b_std <- lm(scale(Student_Satisfaction) ~ scale(Reliability) + scale(Responsiveness) +
+                    scale(Assurance) + scale(Tangibility) + scale(Empathy) +
+                    Gender + Year + Program + CafeteriaUsage, data=csd)
+summary(model2b_std)
+```
+```{r}
+shapiro.test(residuals(model2b_std))
+qqnorm(residuals(model2b_std)); qqline(residuals(model2b_std), col="red")
+```
+
+
+Objective 3
+Step 1: Focus on one moderator at a time
+```{r}
+modelAFG <-lm(Student_Satisfaction ~ Tangibility* Gender, data = csd)
+summary(modelAFG)
+```
+
+
+
+```{r}
+modelAFY <- lm(Student_Satisfaction ~ Tangibility* Year, data = csd)
+summary(modelAFY)
+```
+
+
+
+```{r}
+modelAFP <- lm(Student_Satisfaction ~ Responsiveness * Program, data = csd)
+summary(modelAFP)
+```
+
+
+Step 2: Gender as a moderator
+```{r}
+mod_gender <- lm(Student_Satisfaction ~ Responsiveness*Gender + Reliability + Assurance + Tangibility + Empathy, data=csd)
+summary(mod_gender)
+```
+```{r}
+shapiro.test(residuals(mod_gender))
+qqnorm(residuals(mod_gender)); qqline(residuals(mod_gender), col="red")
+```
+
+```{r}
+#Homoscedasticity test (equal variance of residuals)
+plot(mod_gender$fitted.values, residuals(mod_gender),
+     main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h=0, col="red")
+```
+```{r}
+#Multicollinearity check
+vif(mod_gender)
+```
+
+Step 3: Year of Study as a moderator
+```{r}
+mod_year <- lm(Student_Satisfaction ~ Responsiveness*Year + Reliability + Assurance + Tangibility + Empathy, data=csd)
+summary(mod_year)
+```
+
+
+Step 4: Program as a moderator
+```{r}
+mod_program <- lm(Student_Satisfaction ~ Responsiveness*Program + Reliability + Assurance + Tangibility + Empathy, data=csd)
+summary(mod_program)
+```
+
+
