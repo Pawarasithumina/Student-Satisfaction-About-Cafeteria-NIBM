@@ -97,7 +97,7 @@ HND in Data Science
 NIBM – NIC Campus
 
 ---
-contributors - [@dhamith99](https://github.com/dhamith99)
+
 
 
 
